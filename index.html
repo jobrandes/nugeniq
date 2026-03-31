@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nugeniq — Your Genetic Nutrition Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0f0e;
+    --surface: #161714;
+    --surface2: #1e1f1c;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e6df;
+    --text2: #9a9890;
+    --text3: #5e5d5a;
+    --accent: #c8e85a;
+    --accent2: #a8c83a;
+    --accent-dim: rgba(200,232,90,0.12);
+    --accent-glow: rgba(200,232,90,0.06);
+    --user-bg: #1e2618;
+    --user-border: rgba(200,232,90,0.2);
+    --red: #e85a5a;
+    --radius: 16px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    overflow: hidden;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-mark svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .logo-name span {
+    color: var(--accent);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .macro-pills {
+    display: flex;
+    gap: 6px;
+  }
+
+  .pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pill.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .new-chat-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .new-chat-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Daily summary panel */
+  .summary-panel {
+    display: none;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .summary-panel.visible {
+    display: block;
+  }
+
+  .summary-title {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 0.75rem;
+  }
+
+  .macro-bars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 520px) {
+    .macro-bars { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .macro-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .macro-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .macro-bar-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .macro-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .macro-bar-fill.warn { background: #e8a85a; }
+  .macro-bar-fill.over { background: var(--red); }
+
+  /* Messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    animation: fadeUp 0.25s ease;
+    max-width: 100%;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user {
+    flex-direction: row-reverse;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .avatar.coach {
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,232,90,0.25);
+    color: var(--accent);
+    font-family: 'DM Serif Display', serif;
+  }
+
+  .avatar.user {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+
+  .bubble {
+    max-width: calc(100% - 50px);
+    padding: 0.85rem 1.1rem;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .message.coach .bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+    color: var(--text);
+  }
+
+  .message.user .bubble {
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-top-right-radius: 4px;
+    color: var(--text);
+  }
+
+  /* Markdown inside bubbles */
+  .bubble strong { font-weight: 500; color: var(--text); }
+  .bubble em { font-style: italic; color: var(--text2); }
+
+  .bubble table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.82rem;
+  }
+
+  .bubble th {
+    text-align: left;
+    padding: 6px 10px;
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 500;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .bubble td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .bubble tr:last-child td { border-bottom: none; }
+
+  .bubble h2, .bubble h3 {
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+    color: var(--text);
+    margin: 0.75rem 0 0.4rem;
+  }
+
+  .bubble h2 { font-size: 1.05rem; }
+  .bubble h3 { font-size: 0.95rem; }
+
+  .bubble p { margin-bottom: 0.5rem; }
+  .bubble p:last-child { margin-bottom: 0; }
+
+  .bubble ul, .bubble ol {
+    padding-left: 1.25rem;
+    margin: 0.4rem 0;
+  }
+
+  .bubble li { margin-bottom: 0.25rem; }
+
+  .bubble code {
+    font-family: monospace;
+    font-size: 0.82em;
+    background: var(--surface2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    gap: 4px;
+    padding: 14px 16px;
+    align-items: center;
+  }
+
+  .typing span {
+    width: 6px;
+    height: 6px;
+    background: var(--text3);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); background: var(--accent); }
+  }
+
+  /* Quick log buttons */
+  .quick-log {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 1.5rem 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .quick-btn {
+    font-size: 12px;
+    font-weight: 400;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .quick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* Input area */
+  .input-area {
+    padding: 0.75rem 1.5rem 1.25rem;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    transition: border-color 0.15s;
+  }
+
+  .input-row:focus-within {
+    border-color: rgba(200,232,90,0.35);
+  }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    line-height: 1.5;
+    resize: none;
+    min-height: 22px;
+    max-height: 140px;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  textarea::placeholder { color: var(--text3); }
+
+  textarea::-webkit-scrollbar { width: 3px; }
+  textarea::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  .send-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    align-self: flex-end;
+  }
+
+  .send-btn:hover { background: var(--accent2); }
+  .send-btn:disabled { background: var(--surface2); cursor: not-allowed; }
+
+  .send-btn svg { color: #0e0f0e; }
+
+  /* Welcome screen */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+    flex: 1;
+    gap: 1.5rem;
+  }
+
+  .welcome-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,232,90,0.25);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .welcome h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.75rem;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .welcome h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .welcome p {
+    font-size: 0.9rem;
+    color: var(--text2);
+    max-width: 400px;
+    line-height: 1.65;
+  }
+
+  .welcome-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    max-width: 500px;
+  }
+
+  .chip {
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    header { padding: 1rem; }
+    .macro-pills { display: none; }
+    .messages { padding: 1rem; }
+    .quick-log { padding: 0 1rem 0.75rem; }
+    .input-area { padding: 0.75rem 1rem 1rem; }
+    .welcome { padding: 2rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0e0f0e" stroke-width="2" stroke-linecap="round">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+          <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4"/>
+          <circle cx="12" cy="12" r="1.5" fill="#0e0f0e"/>
+        </svg>
+      </div>
+      <span class="logo-name">nuge<span>niq</span></span>
+    </div>
+    <div class="header-right">
+      <div class="macro-pills">
+        <div class="pill" id="summaryToggle" onclick="toggleSummary()">Today's Macros</div>
+      </div>
+      <button class="new-chat-btn" onclick="newChat()" title="New conversation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Summary Panel -->
+  <div class="summary-panel" id="summaryPanel">
+    <div class="summary-title">Daily Progress</div>
+    <div class="macro-bars" id="macroBars">
+      <div class="macro-bar-item">
+        <div class="macro-bar-label"><span>Calories</span><span id="calVal">— / 1400</span></div>
+        <div class="macro-bar-track"><div class="macro-bar-fill" id="calBar" style="width:0%"></div></div>
+      </div>
+      <div class="macro-bar-item">
+        <div class="macro-bar-label"><span>Protein</span><span id="proVal">— / 95g</span></div>
+        <div class="macro-bar-track"><div class="macro-bar-fill" id="proBar" style="width:0%"></div></div>
+      </div>
+      <div class="macro-bar-item">
+        <div class="macro-bar-label"><span>Sat Fat</span><span id="fatVal">— / 15g</span></div>
+        <div class="macro-bar-track"><div class="macro-bar-fill" id="fatBar" style="width:0%"></div></div>
+      </div>
+      <div class="macro-bar-item">
+        <div class="macro-bar-label"><span>Added Sugar</span><span id="sugVal">— / 25g</span></div>
+        <div class="macro-bar-track"><div class="macro-bar-fill" id="sugBar" style="width:0%"></div></div>
+      </div>
+      <div class="macro-bar-item">
+        <div class="macro-bar-label"><span>Fiber</span><span id="fibVal">— / 25g</span></div>
+        <div class="macro-bar-track"><div class="macro-bar-fill" id="fibBar" style="width:0%"></div></div>
+      </div>
+      <div class="macro-bar-item">
+        <div class="macro-bar-label"><span>Sodium</span><span id="sodVal">— / 2300mg</span></div>
+        <div class="macro-bar-track"><div class="macro-bar-fill" id="sodBar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages">
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+          <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4"/>
+          <circle cx="12" cy="12" r="1.5" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <h1>Hey Jo-Anne,<br><em>ready to coach?</em></h1>
+      <p>Your genetics-powered nutrition buddy is here. Log food, get meal suggestions, or just check in — I've got your full profile loaded and ready to go.</p>
+      <div class="welcome-chips">
+        <div class="chip" onclick="sendQuick('Good morning! Log my coffee please.')">☕ Log my coffee</div>
+        <div class="chip" onclick="sendQuick('Log my Oats Overnight breakfast.')">🥣 Log breakfast</div>
+        <div class="chip" onclick="sendQuick('Log my Chocolate Berry PB2 shake.')">🥤 Log my shake</div>
+        <div class="chip" onclick="sendQuick('What should I eat next?')">🤔 What to eat next?</div>
+        <div class="chip" onclick="sendQuick('How am I doing on my macros today?')">📊 Check my macros</div>
+        <div class="chip" onclick="sendQuick('Give me a high protein lunch idea that fits my goals.')">💡 Lunch ideas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick log -->
+  <div class="quick-log" id="quickLog" style="display:none">
+    <button class="quick-btn" onclick="sendQuick('Log my morning coffee.')">☕ Coffee</button>
+    <button class="quick-btn" onclick="sendQuick('Log my Oats Overnight.')">🥣 Oats Overnight</button>
+    <button class="quick-btn" onclick="sendQuick('Log my Chocolate Berry PB2 shake.')">🥤 Shake</button>
+    <button class="quick-btn" onclick="sendQuick('Log my nightly chocolate mousse.')">🍫 Mousse</button>
+    <button class="quick-btn" onclick="sendQuick('Log a Barebells bar.')">🍫 Barebells</button>
+    <button class="quick-btn" onclick="sendQuick('Log a string cheese.')">🧀 String cheese</button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-row">
+      <textarea
+        id="input"
+        placeholder="Tell me what you ate, ask a question, or just check in..."
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let conversationHistory = [];
+  let isLoading = false;
+
+  // Simple markdown renderer
+  function renderMarkdown(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[htup])/gm, '')
+      .replace(/\|(.+)\|/g, (match) => {
+        const cells = match.split('|').filter(c => c.trim());
+        return cells.map(c => `<td>${c.trim()}</td>`).join('');
+      })
+      // Tables
+      .replace(/(<td>.+<\/td>\n?)+/g, (rows) => {
+        const lines = rows.trim().split('\n');
+        let html = '<table>';
+        lines.forEach((line, i) => {
+          if (line.includes('---')) return;
+          const tag = i === 0 ? 'th' : 'td';
+          const cells = line.replace(/<\/?td>/g, '').split('|').filter(c => c.trim());
+          if (cells.length > 1) {
+            html += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+          }
+        });
+        return html + '</table>';
+      });
+  }
+
+  // Better markdown parser
+  function parseMarkdown(text) {
+    let html = text;
+
+    // Tables first
+    html = html.replace(/(\|.+\|\n?)+/g, (tableText) => {
+      const rows = tableText.trim().split('\n').filter(r => r.trim());
+      let tableHtml = '<table>';
+      let isHeader = true;
+      rows.forEach(row => {
+        if (row.match(/^\|[-\s|]+\|$/)) { isHeader = false; return; }
+        const cells = row.split('|').filter((_, i, a) => i > 0 && i < a.length - 1);
+        const tag = isHeader ? 'th' : 'td';
+        tableHtml += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+        if (isHeader) isHeader = false;
+      });
+      return tableHtml + '</table>';
+    });
+
+    // Headings
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+
+    // Bold/italic
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+    // Code
+    html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+
+    // Lists
+    html = html.replace(/(^- .+\n?)+/gm, (list) => {
+      const items = list.trim().split('\n').map(i => `<li>${i.replace(/^- /, '')}</li>`).join('');
+      return `<ul>${items}</ul>`;
+    });
+
+    // Paragraphs
+    html = html.split('\n\n').map(block => {
+      if (block.match(/^<[htul]/)) return block;
+      return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+    }).join('');
+
+    return html;
+  }
+
+  function addMessage(role, content) {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    document.getElementById('quickLog').style.display = 'flex';
+
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+
+    const avatarLetter = role === 'coach' ? 'N' : 'J';
+    div.innerHTML = `
+      <div class="avatar ${role}">${avatarLetter}</div>
+      <div class="bubble">${role === 'coach' ? parseMarkdown(content) : escapeHtml(content)}</div>
+    `;
+
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+
+    // Try to parse macro data from response
+    if (role === 'coach') {
+      parseMacroData(content);
+    }
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showTyping() {
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message coach';
+    div.id = 'typing-indicator';
+    div.innerHTML = `
+      <div class="avatar coach">N</div>
+      <div class="bubble">
+        <div class="typing">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function removeTyping() {
+    const indicator = document.getElementById('typing-indicator');
+    if (indicator) indicator.remove();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if (!text || isLoading) return;
+
+    input.value = '';
+    autoResize(input);
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    addMessage('user', text);
+    conversationHistory.push({ role: 'user', content: text });
+
+    showTyping();
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationHistory }),
+      });
+
+      const data = await response.json();
+      removeTyping();
+
+      if (data.content && data.content[0]) {
+        const reply = data.content[0].text;
+        conversationHistory.push({ role: 'assistant', content: reply });
+        addMessage('coach', reply);
+      } else {
+        addMessage('coach', "Hmm, something went wrong on my end. Try again?");
+      }
+    } catch (err) {
+      removeTyping();
+      addMessage('coach', "Connection issue — check your internet and try again.");
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
+
+  function sendQuick(text) {
+    document.getElementById('input').value = text;
+    sendMessage();
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  function toggleSummary() {
+    const panel = document.getElementById('summaryPanel');
+    const btn = document.getElementById('summaryToggle');
+    panel.classList.toggle('visible');
+    btn.classList.toggle('active');
+  }
+
+  function newChat() {
+    conversationHistory = [];
+    const messages = document.getElementById('messages');
+    messages.innerHTML = `
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4"/>
+            <circle cx="12" cy="12" r="1.5" fill="var(--accent)"/>
+          </svg>
+        </div>
+        <h1>Hey Jo-Anne,<br><em>ready to coach?</em></h1>
+        <p>Your genetics-powered nutrition buddy is here. Log food, get meal suggestions, or just check in — I've got your full profile loaded and ready to go.</p>
+        <div class="welcome-chips">
+          <div class="chip" onclick="sendQuick('Good morning! Log my coffee please.')">☕ Log my coffee</div>
+          <div class="chip" onclick="sendQuick('Log my Oats Overnight breakfast.')">🥣 Log breakfast</div>
+          <div class="chip" onclick="sendQuick('Log my Chocolate Berry PB2 shake.')">🥤 Log my shake</div>
+          <div class="chip" onclick="sendQuick('What should I eat next?')">🤔 What to eat next?</div>
+          <div class="chip" onclick="sendQuick('How am I doing on my macros today?')">📊 Check my macros</div>
+          <div class="chip" onclick="sendQuick('Give me a high protein lunch idea that fits my goals.')">💡 Lunch ideas</div>
+        </div>
+      </div>`;
+    document.getElementById('quickLog').style.display = 'none';
+    resetMacroBars();
+  }
+
+  // Basic macro parser — scans coach replies for numbers in the nutrition table
+  function parseMacroData(text) {
+    const calMatch = text.match(/Calories[^\d]*(\d+)[^\d|]*\|[^\d]*(\d+)/);
+    const proMatch = text.match(/Protein[^\d]*(\d+)g[^\d|]*\|[^\d]*(\d+)/);
+    const fatMatch = text.match(/Sat Fat[^\d]*(\d+)g[^\d|]*\|[^\d]*(\d+)/);
+    const sugMatch = text.match(/Added Sugar[^\d]*(\d+)g[^\d|]*\|[^\d]*(\d+)/);
+    const fibMatch = text.match(/Fiber[^\d]*(\d+)g[^\d|]*\|[^\d]*(\d+)/);
+    const sodMatch = text.match(/Sodium[^\d]*(\d+)mg[^\d|]*\|[^\d]*(\d+)/);
+
+    if (calMatch) updateBar('cal', parseInt(calMatch[1]), 1400, calMatch[1] + ' / 1400');
+    if (proMatch) updateBar('pro', parseInt(proMatch[1]), 95, proMatch[1] + 'g / 95g');
+    if (fatMatch) updateBar('fat', parseInt(fatMatch[1]), 15, fatMatch[1] + 'g / 15g');
+    if (sugMatch) updateBar('sug', parseInt(sugMatch[1]), 25, sugMatch[1] + 'g / 25g');
+    if (fibMatch) updateBar('fib', parseInt(fibMatch[1]), 25, fibMatch[1] + 'g / 25g');
+    if (sodMatch) updateBar('sod', parseInt(sodMatch[1]), 2300, sodMatch[1] + 'mg / 2300mg');
+  }
+
+  function updateBar(id, value, max, label) {
+    const pct = Math.min((value / max) * 100, 100);
+    const bar = document.getElementById(id + 'Bar');
+    const val = document.getElementById(id + 'Val');
+    if (bar) {
+      bar.style.width = pct + '%';
+      bar.className = 'macro-bar-fill' + (pct > 100 ? ' over' : pct > 85 ? ' warn' : '');
+    }
+    if (val) val.textContent = label;
+  }
+
+  function resetMacroBars() {
+    ['cal','pro','fat','sug','fib','sod'].forEach(id => {
+      const bar = document.getElementById(id + 'Bar');
+      const val = document.getElementById(id + 'Val');
+      if (bar) bar.style.width = '0%';
+    });
+    document.getElementById('calVal').textContent = '— / 1400';
+    document.getElementById('proVal').textContent = '— / 95g';
+    document.getElementById('fatVal').textContent = '— / 15g';
+    document.getElementById('sugVal').textContent = '— / 25g';
+    document.getElementById('fibVal').textContent = '— / 25g';
+    document.getElementById('sodVal').textContent = '— / 2300mg';
+  }
+</script>
+</body>
+</html>

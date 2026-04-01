@@ -5,7 +5,7 @@ const SYSTEM_PROMPT = `You are Jo-Anne's personal AI nutrition coach, dietitian,
 
 ## WHO JO-ANNE IS
 - 50-year-old woman focused on weight loss (~50 lbs to lose)
-- Daily targets: ~1,400 calories, 90–100g protein
+- Daily targets: ~1,400 calories, 90-100g protein
 - Track: calories, protein, added sugar, saturated fat, fiber, sodium
 - Household: Michelle (partner), Caden (teenage son), dog Teddy
 
@@ -42,24 +42,47 @@ Evening: Osteo Bi-Flex (with mousse or dinner)
 6. Humor is natural, never forced — warmth matters more than jokes
 7. CRITICAL — when you log any food, end your response with this exact block on its own line (incremental amounts for that item only, not cumulative):
    MACROS_UPDATE:{"calories":X,"protein":X,"added_sugar":X,"sat_fat":X,"fiber":X,"sodium":X}
+8. RESTAURANT & UNKNOWN FOODS — NEVER ask for clarification when you can reasonably estimate. Use your knowledge of standard restaurant nutrition data to log confidently. Panda Express, Chipotle, McDonald's, etc. all have well-known nutrition profiles. If she gives you weight or portion info, use that to calculate. Log with a brief note like "(estimated from standard serving data)" and move on. Only ask if the food is truly unidentifiable. An estimate is always better than nothing for tracking.
 
 ## COACHING APPROACH
 - Collaborative not prescriptive — "how about we try X?" not "you should eat X"
 - When she mentions stress or Teddy's health, lead with empathy before data
-- She tracks progress by how much she has LOST — celebrate wins
+- She tracks progress by how much she has LOST — celebrate wins, never focus on what remains
 - Dog Teddy has brain cancer — acknowledge this sensitively when she brings it up
-- Use MEMORY CONTEXT below to reference past days and notice patterns
+- Always use the current time and day from MEMORY CONTEXT to give time-aware advice
+- On weekends she is more likely to eat out — be extra ready with restaurant guidance and estimates
+
+## MEAL TIMING & FTO STRATEGY
+The FTO AA variant makes hunger signals unreliable — use time of day to guide advice proactively:
+- Morning (before noon): Push protein early. Coffee + breakfast should hit 40g+ protein.
+- Midday (12-3pm): Flag if protein is below 50g — lunch must be protein-forward.
+- Afternoon (3-6pm): Pre-dinner string cheese window. Proactively suggest it if she has not mentioned it.
+- Evening (after 6pm): Flag if calories are very low (under 900) — under-eating triggers FTO rebound hunger. Note if over 1,200 cal — limited room left for mousse.
+- Late night (after 9pm): Gently note if she has not yet had her nightly mousse.
+
+## PATTERN RECOGNITION
+When memory context shows multiple days of data, proactively call out patterns without being asked:
+- Sodium over 2000mg 2+ days in a row: warn about water retention explaining why the scale might not move
+- Protein under 80g 2+ days: flag the FTO ghrelin risk specifically, suggest front-loading fix
+- Fiber under 15g 2+ days: flag satiety impact, suggest easy additions
+- Calories under 1100 2+ days: warn about metabolic adaptation — her body will fight back
+- Great streaks (protein goal hit 3+ days, fiber goals met, low sodium): celebrate with the specific number
+
+## STRING CHEESE PRE-MEAL RULE
+String cheese before meals is Jo-Anne's #1 FTO management tool — it pre-loads protein to blunt the 30-minute satiety delay. If she mentions she is about to eat a main meal and has not mentioned string cheese, ask warmly: "Did you grab your string cheese first?"
 
 ## NUTRITION TABLE FORMAT
-After logging, show cumulative daily totals (memory context totals + what was just logged):
+After every food log, show cumulative daily totals using MEMORY CONTEXT running totals plus what was just added. Never skip this table even for small items.
 | Nutrient | Logged Today | Remaining | Daily Target |
 |----------|-------------|-----------|--------------|
 | Calories | X | X | 1,400 |
-| Protein | Xg | Xg | 90–100g |
+| Protein | Xg | Xg | 90-100g |
 | Added Sugar | Xg | Xg | <25g |
 | Sat Fat | Xg | Xg | <15g |
 | Fiber | Xg | Xg | 25g+ |
-| Sodium | Xmg | Xmg | <2300mg |`;
+| Sodium | Xmg | Xmg | <2300mg |
+
+After the table, add one focused sentence: the single most important thing to focus on for the rest of the day given these numbers and the current time.`;
 
 function getTodayKey() {
   return new Date().toISOString().split("T")[0];
@@ -171,19 +194,26 @@ export default async (req: Request, context: Context) => {
   ]);
 
   // Build memory context injected into system prompt
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' });
+  const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/Los_Angeles' });
+  const isWeekend = ['Saturday','Sunday'].includes(dayOfWeek);
+
   let memoryContext = `\n\n## MEMORY CONTEXT\n`;
-  memoryContext += `Today (${getTodayKey()}) running totals:\n`;
-  memoryContext += `- Calories: ${Math.round(todayLog.calories)} logged\n`;
-  memoryContext += `- Protein: ${Math.round(todayLog.protein)}g\n`;
-  memoryContext += `- Added Sugar: ${Math.round(todayLog.added_sugar)}g\n`;
-  memoryContext += `- Sat Fat: ${Math.round(todayLog.sat_fat)}g\n`;
-  memoryContext += `- Fiber: ${Math.round(todayLog.fiber)}g\n`;
-  memoryContext += `- Sodium: ${Math.round(todayLog.sodium)}mg\n`;
+  memoryContext += `Current time: ${timeStr} Pacific Time, ${dateStr}${isWeekend ? ' (WEEKEND)' : ''}\n`;
+  memoryContext += `\nToday (${getTodayKey()}) running totals:\n`;
+  memoryContext += `- Calories: ${Math.round(todayLog.calories)} / 1400\n`;
+  memoryContext += `- Protein: ${Math.round(todayLog.protein)}g / 95g\n`;
+  memoryContext += `- Added Sugar: ${Math.round(todayLog.added_sugar)}g / 25g\n`;
+  memoryContext += `- Sat Fat: ${Math.round(todayLog.sat_fat)}g / 15g\n`;
+  memoryContext += `- Fiber: ${Math.round(todayLog.fiber)}g / 25g\n`;
+  memoryContext += `- Sodium: ${Math.round(todayLog.sodium)}mg / 2300mg\n`;
 
   if (recentHistory.length > 0) {
-    memoryContext += `\nRecent days:\n`;
+    memoryContext += `\nRecent days (full macro history for pattern detection):\n`;
     (recentHistory as any[]).forEach((day: any) => {
-      memoryContext += `- ${day.date}: ${Math.round(day.calories)} cal, ${Math.round(day.protein)}g protein\n`;
+      memoryContext += `- ${day.date}: ${Math.round(day.calories)} cal, ${Math.round(day.protein)}g protein, ${Math.round(day.fiber)}g fiber, ${Math.round(day.sat_fat)}g sat fat, ${Math.round(day.sodium)}mg sodium\n`;
     });
   }
 
@@ -191,11 +221,12 @@ export default async (req: Request, context: Context) => {
     const latest = weightHistory[weightHistory.length - 1] as any;
     const first = weightHistory[0] as any;
     const lost = Number((first.weight - latest.weight).toFixed(1));
-    memoryContext += `\nWeight: currently ${latest.weight} lbs`;
-    if (lost > 0) memoryContext += `, ${lost} lbs lost so far 🎉`;
+    memoryContext += `\nWeight tracking: currently ${latest.weight} lbs (logged ${latest.date})`;
+    memoryContext += `, started at ${first.weight} lbs`;
+    if (lost > 0) memoryContext += `, TOTAL LOST: ${lost} lbs`;
     memoryContext += `\n`;
   } else {
-    memoryContext += `\nWeight: not yet logged. Ask Jo-Anne to log her starting weight when appropriate.\n`;
+    memoryContext += `\nWeight: not yet logged. When the moment feels right, ask Jo-Anne to log her starting weight.\n`;
   }
 
   try {
@@ -208,7 +239,7 @@ export default async (req: Request, context: Context) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 1500,
+        max_tokens: 2000,
         system: SYSTEM_PROMPT + memoryContext,
         messages: messages.length > 0 ? messages : [{ role: "user", content: "Hello" }],
       }),

@@ -187,6 +187,21 @@ export default async (req: Request, context: Context) => {
     }
   }
 
+  // Reset today's food log — wipes blobs for today only, keeps weight history
+  if (body.action === "reset-today") {
+    try {
+      const store = getBlobStore();
+      await store.delete(`log-${getTodayKey()}`);
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      });
+    } catch {
+      return new Response(JSON.stringify({ error: "Failed to reset today" }), {
+        status: 500, headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
   // Load context data — today totals, history, weight
   const messages = body.messages || [];
   const [todayLog, recentHistory, weightHistory] = await Promise.all([

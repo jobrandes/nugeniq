@@ -558,6 +558,7 @@
     <div class="header-right">
       <div class="macro-pills">
         <div class="pill" id="summaryToggle" onclick="toggleSummary()">Today's Macros</div>
+        <div class="pill" onclick="logWeight()">⚖️ Log weight</div>
       </div>
       <button class="new-chat-btn" onclick="newChat()" title="New conversation">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -622,7 +623,7 @@
   </div>
 
   <!-- Quick log -->
-  <div class="quick-log" id="quickLog" style="display:none">
+  <div class="quick-log" id="quickLog">
     <button class="quick-btn" onclick="sendQuick('Log my morning coffee.')">☕ Coffee</button>
     <button class="quick-btn" onclick="sendQuick('Log my Oats Overnight.')">🥣 Oats Overnight</button>
     <button class="quick-btn" onclick="sendQuick('Log my Chocolate Berry PB2 shake.')">🥤 Shake</button>
@@ -735,7 +736,7 @@
     const welcome = document.getElementById('welcome');
     if (welcome) welcome.remove();
 
-    document.getElementById('quickLog').style.display = 'flex';
+    // quick log always visible
 
     const messages = document.getElementById('messages');
     const div = document.createElement('div');
@@ -872,7 +873,7 @@
           <div class="chip" onclick="sendQuick('Give me a high protein lunch idea that fits my goals.')">💡 Lunch ideas</div>
         </div>
       </div>`;
-    document.getElementById('quickLog').style.display = 'none';
+    // quick log stays visible
     resetMacroBars();
   }
 
@@ -886,7 +887,7 @@
         body: JSON.stringify({ messages: [], saveWeight: parseFloat(w) }),
       });
       addMessage('coach', `Got it — logged your weight as ${parseFloat(w)} lbs. Every entry moves us closer to the full picture. 💪`);
-      document.getElementById('quickLog').style.display = 'flex';
+      // quick log always visible
       document.getElementById('welcome') && document.getElementById('welcome').remove();
     } catch {
       alert('Could not save weight — try again.');

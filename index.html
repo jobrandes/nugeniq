@@ -629,6 +629,7 @@
     <button class="quick-btn" onclick="sendQuick('Log my nightly chocolate mousse.')">🍫 Mousse</button>
     <button class="quick-btn" onclick="sendQuick('Log a Barebells bar.')">🍫 Barebells</button>
     <button class="quick-btn" onclick="sendQuick('Log a string cheese.')">🧀 String cheese</button>
+    <button class="quick-btn" onclick="logWeight()">⚖️ Log weight</button>
   </div>
 
   <!-- Input -->
@@ -807,9 +808,11 @@
       removeTyping();
 
       if (data.content && data.content[0]) {
-        const reply = data.content[0].text;
+        let reply = data.content[0].text;
+        reply = reply.replace(/MACROS_UPDATE:\{[^}]+\}/g, '').trim();
         conversationHistory.push({ role: 'assistant', content: reply });
         addMessage('coach', reply);
+        if (data._totals) updateBarsFromTotals(data._totals);
       } else {
         addMessage('coach', "Hmm, something went wrong on my end. Try again?");
       }
@@ -871,6 +874,38 @@
       </div>`;
     document.getElementById('quickLog').style.display = 'none';
     resetMacroBars();
+  }
+
+  async function logWeight() {
+    const w = prompt('Enter your current weight (lbs):');
+    if (!w || isNaN(parseFloat(w))) return;
+    try {
+      await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [], saveWeight: parseFloat(w) }),
+      });
+      addMessage('coach', `Got it — logged your weight as ${parseFloat(w)} lbs. Every entry moves us closer to the full picture. 💪`);
+      document.getElementById('quickLog').style.display = 'flex';
+      document.getElementById('welcome') && document.getElementById('welcome').remove();
+    } catch {
+      alert('Could not save weight — try again.');
+    }
+  }
+
+  function updateBarsFromTotals(totals) {
+    if (!totals) return;
+    updateBar('cal', totals.calories, 1400, totals.calories + ' / 1400');
+    updateBar('pro', totals.protein, 95, totals.protein + 'g / 95g');
+    updateBar('fat', totals.sat_fat, 15, totals.sat_fat + 'g / 15g');
+    updateBar('sug', totals.added_sugar, 25, totals.added_sugar + 'g / 25g');
+    updateBar('fib', totals.fiber, 25, totals.fiber + 'g / 25g');
+    updateBar('sod', totals.sodium, 2300, totals.sodium + 'mg / 2300mg');
+    const panel = document.getElementById('summaryPanel');
+    if (!panel.classList.contains('visible')) {
+      panel.classList.add('visible');
+      document.getElementById('summaryToggle').classList.add('active');
+    }
   }
 
   // Basic macro parser — scans coach replies for numbers in the nutrition table

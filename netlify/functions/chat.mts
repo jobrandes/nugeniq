@@ -1,4 +1,4 @@
-import type { Context } from "@netlify/functions";
+import type { Context, Config } from "@netlify/functions";
 
 const SYSTEM_PROMPT = `You are Jo-Anne's personal AI nutrition coach, dietitian, and accountability partner. Your entire purpose is helping her lose weight — she is approximately 50 lbs overweight and working toward that goal every day. You know her genetics, her foods, her family, and her life. You are warm, collaborative, and naturally funny (not forced). You are her buddy, not a bot.
 
@@ -62,7 +62,8 @@ export default async (req: Request, context: Context) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  const apiKey = Netlify.env.get("ANTHROPIC_API_KEY");
+  const apiKey = Netlify.env.get("ANTHROPIC_API_KEY") ?? process.env.ANTHROPIC_API_KEY;
+
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "API key not configured" }), {
       status: 500,
@@ -80,36 +81,43 @@ export default async (req: Request, context: Context) => {
     });
   }
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-5",
-      max_tokens: 1500,
-      system: SYSTEM_PROMPT,
-      messages: body.messages,
-    }),
-  });
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        messages: body.messages,
+      }),
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!response.ok) {
-    return new Response(JSON.stringify({ error: data }), {
-      status: response.status,
+    if (!response.ok) {
+      return new Response(JSON.stringify({ error: data }), {
+        status: response.status,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "Failed to reach Anthropic API" }), {
+      status: 502,
       headers: { "Content-Type": "application/json" },
     });
   }
-
-  return new Response(JSON.stringify(data), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
 };
 
-export const config = {
+export const config: Config = {
   path: "/api/chat",
 };
